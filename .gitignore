@@ -1,0 +1,12 @@
+node_modules
+dist
+.DS_Store
+*.js
+!eslint.config.mjs
+*.d.ts
+*.tsbuildinfo
+coverage
+tmp
+.env
+.env.*
+drizzle/migrations/meta/
