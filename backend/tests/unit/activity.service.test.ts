@@ -178,7 +178,7 @@ describe('logActivity', () => {
 
     // The first arg to db.insert() should be the activityLogTable
     expect(mockInsert).toHaveBeenCalledTimes(1)
-    const insertArg = mockInsert.mock.calls[0][0]
+    const insertArg = mockInsert.mock.calls[0]![0]
     // Verify it is a drizzle table object (has the table symbol)
     expect(insertArg).toBeDefined()
   })

@@ -22,7 +22,7 @@ export const activityRouter = router({
         pageSize: z.number().int().min(1).max(100).default(20),
       }),
     )
-    .query(async ({ _ctx, input }) => {
+    .query(async ({ input }) => {
       const { page, pageSize, entityType, entityId } = input
       const offset = (page - 1) * pageSize
 
