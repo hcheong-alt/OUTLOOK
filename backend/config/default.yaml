@@ -1,0 +1,33 @@
+app_name: OUTLOOK
+
+backend:
+  port: 3002
+
+db:
+  host: localhost
+  port: 5434
+  user: outlookapp
+  password: Test1234!
+  database: outlook
+
+sts:
+  type: keycloak
+  client_id: outlook
+  issuer_uri: http://localhost:8080/realms/pki
+  scope: openid profile email
+
+accessControl:
+  admins:
+    - bob.martinez@example.com
+  defaultRole: analyst
+
+scoring:
+  leaderboard_min_predictions: 10
+  nightly_cron: "0 2 * * *"
+
+logging:
+  level: debug
+  coloring: true
+
+ecosystem:
+  apps: []
