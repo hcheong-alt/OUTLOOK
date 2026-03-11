@@ -3,7 +3,6 @@ import { FormsModule } from '@angular/forms'
 import { toast } from 'ngx-sonner'
 import { IconComponent } from '@shared/components/icon/icon.component'
 import { BadgeComponent } from '@shared/components/badge/badge.component'
-import { LoaderComponent } from '@shared/components/loader/loader.component'
 
 @Component({
   selector: 'app-settings',
@@ -12,7 +11,6 @@ import { LoaderComponent } from '@shared/components/loader/loader.component'
     FormsModule,
     IconComponent,
     BadgeComponent,
-    LoaderComponent,
   ],
   template: `
     <div class="flex h-full w-full flex-col items-center overflow-y-auto px-10 pb-24 pt-8">

@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms'
 import { toast } from 'ngx-sonner'
 import { IconComponent } from '@shared/components/icon/icon.component'
 import { BadgeComponent } from '@shared/components/badge/badge.component'
-import { LoaderComponent } from '@shared/components/loader/loader.component'
 import {
   QUESTION_STATUS_LABELS,
   QUESTION_STATUS_COLORS,
@@ -120,95 +119,383 @@ type Tab = 'predict' | 'community' | 'comments' | 'activity'
     FormsModule,
     IconComponent,
     BadgeComponent,
-    LoaderComponent,
   ],
   template: `
-    <div class="flex h-full w-full flex-col items-center overflow-y-auto px-10 pb-24 pt-8">
-      <div class="flex w-full max-w-[1600px] flex-col">
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!-- VARIANT A — Header card + horizontal tab bar            -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    @if (variant() === 'A') {
+      <div class="flex h-full w-full flex-col items-center overflow-y-auto px-10 pb-24 pt-8">
+        <div class="flex w-full max-w-[1600px] flex-col">
 
-        <!-- Back link -->
-        <a
-          routerLink="/questions"
-          class="mb-4 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
-        >
-          <app-icon name="arrow-left" class="h-4 w-4" />
-          Back to Questions
-        </a>
+          <!-- Back link -->
+          <a
+            routerLink="/questions"
+            class="mb-4 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+          >
+            <app-icon name="arrow-left" class="h-4 w-4" />
+            Back to Questions
+          </a>
 
-        <!-- Header -->
-        <div class="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          <div class="mb-3 flex items-start justify-between">
-            <div class="flex items-center gap-2">
-              <app-badge [text]="statusLabels[question.status]" [colorClass]="statusColors[question.status]" />
-              <app-badge [text]="question.category" colorClass="bg-gray-100 text-gray-700" />
-              <app-badge [text]="question.visibility" colorClass="bg-blue-50 text-blue-700" />
+          <!-- Header -->
+          <div class="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <div class="mb-3 flex items-start justify-between">
+              <div class="flex items-center gap-2">
+                <app-badge [text]="statusLabels[question.status]" [colorClass]="statusColors[question.status]" />
+                <app-badge [text]="question.category" colorClass="bg-gray-100 text-gray-700" />
+                <app-badge [text]="question.visibility" colorClass="bg-blue-50 text-blue-700" />
+              </div>
+              <div class="text-right text-xs text-gray-500">
+                <p>Created by {{ question.createdBy }} on {{ formatDate(question.createdAt) }}</p>
+              </div>
             </div>
-            <div class="text-right text-xs text-gray-500">
-              <p>Created by {{ question.createdBy }} on {{ formatDate(question.createdAt) }}</p>
+
+            <h1 class="mb-3 text-xl font-medium text-gray-900">{{ question.title }}</h1>
+
+            <div class="mb-4 flex items-center gap-6 text-sm text-gray-600">
+              <div class="flex items-center gap-1.5">
+                <app-icon name="calendar-days" class="h-4 w-4 text-gray-400" />
+                Deadline: {{ formatDate(question.deadline) }}
+              </div>
+              <div class="flex items-center gap-1.5">
+                <app-icon name="users" class="h-4 w-4 text-gray-400" />
+                {{ question.predictions }} predictions
+              </div>
+              <div class="flex items-center gap-1.5">
+                <app-icon name="bar-chart-3" class="h-4 w-4 text-gray-400" />
+                Consensus: {{ (question.consensus * 100).toFixed(0) }}%
+              </div>
             </div>
+
+            <!-- Resolution criteria -->
+            <div class="rounded-lg border border-gray-100 bg-gray-50 p-4">
+              <h3 class="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-500">Resolution Criteria</h3>
+              <p class="text-sm text-gray-700">{{ question.resolutionCriteria }}</p>
+            </div>
+
+            @if (question.description) {
+              <div class="mt-3">
+                <h3 class="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-500">Description</h3>
+                <p class="text-sm text-gray-700">{{ question.description }}</p>
+              </div>
+            }
           </div>
 
-          <h1 class="mb-3 text-xl font-medium text-gray-900">{{ question.title }}</h1>
-
-          <div class="mb-4 flex items-center gap-6 text-sm text-gray-600">
-            <div class="flex items-center gap-1.5">
-              <app-icon name="calendar-days" class="h-4 w-4 text-gray-400" />
-              Deadline: {{ formatDate(question.deadline) }}
-            </div>
-            <div class="flex items-center gap-1.5">
-              <app-icon name="users" class="h-4 w-4 text-gray-400" />
-              {{ question.predictions }} predictions
-            </div>
-            <div class="flex items-center gap-1.5">
-              <app-icon name="bar-chart-3" class="h-4 w-4 text-gray-400" />
-              Consensus: {{ (question.consensus * 100).toFixed(0) }}%
-            </div>
+          <!-- Tabs -->
+          <div class="mb-6 flex border-b border-gray-200">
+            @for (tab of tabs; track tab.key) {
+              <button
+                class="relative flex items-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors"
+                [class]="activeTab() === tab.key
+                  ? 'text-rose-600'
+                  : 'text-gray-500 hover:text-gray-700'"
+                (click)="activeTab.set(tab.key)"
+              >
+                <app-icon [name]="tab.icon" class="h-4 w-4" />
+                {{ tab.label }}
+                @if (activeTab() === tab.key) {
+                  <div class="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-rose-500"></div>
+                }
+              </button>
+            }
           </div>
 
-          <!-- Resolution criteria -->
-          <div class="rounded-lg border border-gray-100 bg-gray-50 p-4">
-            <h3 class="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-500">Resolution Criteria</h3>
-            <p class="text-sm text-gray-700">{{ question.resolutionCriteria }}</p>
-          </div>
+          <!-- Tab content -->
 
-          @if (question.description) {
-            <div class="mt-3">
-              <h3 class="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-500">Description</h3>
-              <p class="text-sm text-gray-700">{{ question.description }}</p>
+          <!-- Predict Tab -->
+          @if (activeTab() === 'predict') {
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+              <!-- Prediction form (2/3) -->
+              <div class="lg:col-span-2">
+                <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+                  <h2 class="mb-4 text-sm font-semibold text-gray-800">Submit Your Prediction</h2>
+
+                  <!-- Probability slider -->
+                  <div class="mb-4">
+                    <div class="mb-2 flex items-center justify-between">
+                      <label class="text-sm font-medium text-gray-700">Probability</label>
+                      <span class="text-2xl font-bold text-rose-600">{{ (predictionValue() * 100).toFixed(0) }}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-rose-500"
+                      min="0"
+                      max="100"
+                      step="1"
+                      [ngModel]="predictionValue() * 100"
+                      (ngModelChange)="predictionValue.set($event / 100)"
+                    />
+                    <div class="mt-1 flex justify-between text-xs text-gray-400">
+                      <span>0% (No)</span>
+                      <span>50% (Toss-up)</span>
+                      <span>100% (Yes)</span>
+                    </div>
+                  </div>
+
+                  <!-- Reasoning -->
+                  <div class="mb-4">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Reasoning</label>
+                    <textarea
+                      class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-400/30"
+                      rows="4"
+                      placeholder="What evidence or analysis supports this probability estimate?"
+                      [ngModel]="predictionReasoning()"
+                      (ngModelChange)="predictionReasoning.set($event)"
+                      maxlength="5000"
+                    ></textarea>
+                  </div>
+
+                  <button
+                    class="rounded-lg bg-rose-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-600"
+                    (click)="submitPrediction()"
+                  >
+                    Submit Prediction
+                  </button>
+                </div>
+              </div>
+
+              <!-- Revision history (1/3) -->
+              <div>
+                <div class="rounded-lg border border-gray-200 bg-white shadow-sm">
+                  <div class="flex items-center gap-2 border-b border-gray-100 px-5 py-3">
+                    <app-icon name="history" class="h-4 w-4 text-rose-500" />
+                    <h2 class="text-sm font-semibold text-gray-800">My Revisions</h2>
+                  </div>
+                  @if (myRevisions.length === 0) {
+                    <div class="px-5 py-8 text-center">
+                      <app-icon name="target" class="mx-auto mb-2 h-8 w-8 text-gray-300" />
+                      <p class="text-sm text-gray-500">No predictions yet</p>
+                      <p class="text-xs text-gray-400">Submit your first prediction</p>
+                    </div>
+                  } @else {
+                    <div class="divide-y divide-gray-50">
+                      @for (rev of myRevisions; track rev.id) {
+                        <div class="px-5 py-3">
+                          <div class="mb-1 flex items-center justify-between">
+                            <span class="text-lg font-bold text-gray-900">{{ (rev.probability * 100).toFixed(0) }}%</span>
+                            <span class="text-xs text-gray-400">{{ formatDateTime(rev.createdAt) }}</span>
+                          </div>
+                          <p class="line-clamp-2 text-xs text-gray-600">{{ rev.reasoning }}</p>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
             </div>
           }
-        </div>
 
-        <!-- Tabs -->
-        <div class="mb-6 flex border-b border-gray-200">
-          @for (tab of tabs; track tab.key) {
-            <button
-              class="relative flex items-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors"
-              [class]="activeTab() === tab.key
-                ? 'text-rose-600'
-                : 'text-gray-500 hover:text-gray-700'"
-              (click)="activeTab.set(tab.key)"
-            >
-              <app-icon [name]="tab.icon" class="h-4 w-4" />
-              {{ tab.label }}
-              @if (activeTab() === tab.key) {
-                <div class="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-rose-500"></div>
+          <!-- Community Tab -->
+          @if (activeTab() === 'community') {
+            <div class="space-y-6">
+              <!-- Aggregate stats -->
+              <div class="grid grid-cols-4 gap-4">
+                <div class="rounded-lg border border-gray-200 bg-white p-5 text-center shadow-sm">
+                  <p class="text-sm text-gray-500">Mean</p>
+                  <p class="mt-1 text-3xl font-bold text-gray-900">{{ (communityStats.mean * 100).toFixed(0) }}%</p>
+                </div>
+                <div class="rounded-lg border border-gray-200 bg-white p-5 text-center shadow-sm">
+                  <p class="text-sm text-gray-500">Median</p>
+                  <p class="mt-1 text-3xl font-bold text-gray-900">{{ (communityStats.median * 100).toFixed(0) }}%</p>
+                </div>
+                <div class="rounded-lg border border-gray-200 bg-white p-5 text-center shadow-sm">
+                  <p class="text-sm text-gray-500">Predictions</p>
+                  <p class="mt-1 text-3xl font-bold text-gray-900">{{ communityStats.count }}</p>
+                </div>
+                <div class="rounded-lg border border-gray-200 bg-white p-5 text-center shadow-sm">
+                  <p class="text-sm text-gray-500">Std Dev</p>
+                  <p class="mt-1 text-3xl font-bold text-gray-900">{{ (communityStats.stdDev * 100).toFixed(0) }}%</p>
+                </div>
+              </div>
+
+              <!-- Prediction table -->
+              <div class="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+                <table class="w-full text-left text-sm">
+                  <thead class="border-b border-gray-200 bg-gray-50">
+                    <tr>
+                      <th scope="col" class="px-4 py-3 font-medium text-gray-600">Analyst</th>
+                      <th scope="col" class="px-4 py-3 font-medium text-gray-600">Probability</th>
+                      <th scope="col" class="px-4 py-3 font-medium text-gray-600">Last Updated</th>
+                      <th scope="col" class="px-4 py-3 font-medium text-gray-600">Brier Score</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (p of communityPredictions; track p.id) {
+                      <tr class="border-b border-gray-100 transition-colors hover:bg-gray-50">
+                        <td class="px-4 py-3">
+                          <div class="flex items-center gap-2">
+                            <div class="flex h-7 w-7 items-center justify-center rounded-full bg-rose-50 text-xs font-medium text-rose-600">
+                              {{ getInitials(p.analyst) }}
+                            </div>
+                            <span class="font-medium text-gray-900">{{ p.analyst }}</span>
+                          </div>
+                        </td>
+                        <td class="px-4 py-3">
+                          <div class="flex items-center gap-2">
+                            <div class="h-1.5 w-16 overflow-hidden rounded-full bg-gray-200">
+                              <div
+                                class="h-full rounded-full bg-rose-400"
+                                [style.width.%]="p.probability * 100"
+                              ></div>
+                            </div>
+                            <span class="font-medium text-gray-900">{{ (p.probability * 100).toFixed(0) }}%</span>
+                          </div>
+                        </td>
+                        <td class="px-4 py-3 text-gray-600">{{ formatDate(p.updatedAt) }}</td>
+                        <td class="px-4 py-3 text-gray-600">{{ p.brierScore !== null ? p.brierScore.toFixed(3) : '--' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+
+          <!-- Comments Tab -->
+          @if (activeTab() === 'comments') {
+            <div class="space-y-4">
+              <!-- Add comment form -->
+              <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                <label class="mb-1 block text-sm font-medium text-gray-700">Add a Comment</label>
+                <textarea
+                  class="mb-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-400/30"
+                  rows="3"
+                  placeholder="Share analysis, evidence, or questions..."
+                  [ngModel]="newCommentText()"
+                  (ngModelChange)="newCommentText.set($event)"
+                  maxlength="5000"
+                ></textarea>
+                <button
+                  class="rounded-lg bg-rose-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  [disabled]="!newCommentText().trim()"
+                  (click)="submitComment()"
+                >
+                  Post Comment
+                </button>
+              </div>
+
+              <!-- Comments list -->
+              @if (comments().length === 0) {
+                <div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 py-12">
+                  <app-icon name="message-circle" class="mb-3 h-10 w-10 text-gray-300" />
+                  <p class="text-sm text-gray-500">No comments yet</p>
+                  <p class="text-xs text-gray-400">Be the first to share your analysis</p>
+                </div>
+              } @else {
+                <div class="space-y-3">
+                  @for (comment of comments(); track comment.id) {
+                    <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                      <div class="mb-2 flex items-center gap-2">
+                        <div class="flex h-7 w-7 items-center justify-center rounded-full bg-rose-50 text-xs font-medium text-rose-600">
+                          {{ getInitials(comment.author) }}
+                        </div>
+                        <span class="text-sm font-medium text-gray-900">{{ comment.author }}</span>
+                        <span class="text-xs text-gray-400">{{ formatDateTime(comment.createdAt) }}</span>
+                      </div>
+                      <p class="text-sm text-gray-700">{{ comment.text }}</p>
+                    </div>
+                  }
+                </div>
               }
-            </button>
+            </div>
           }
+
+          <!-- Activity Tab -->
+          @if (activeTab() === 'activity') {
+            <div class="rounded-lg border border-gray-200 bg-white shadow-sm">
+              <div class="border-b border-gray-100 px-5 py-3">
+                <h2 class="text-sm font-semibold text-gray-800">Activity Timeline</h2>
+              </div>
+              @if (activityEntries.length === 0) {
+                <div class="px-5 py-12 text-center">
+                  <app-icon name="activity" class="mx-auto mb-2 h-8 w-8 text-gray-300" />
+                  <p class="text-sm text-gray-500">No activity yet</p>
+                </div>
+              } @else {
+                <div class="divide-y divide-gray-50">
+                  @for (entry of activityEntries; track entry.id) {
+                    <div class="flex items-start gap-3 px-5 py-3 transition-colors hover:bg-gray-50">
+                      <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-medium text-gray-600">
+                        {{ getInitials(entry.actor) }}
+                      </div>
+                      <div class="min-w-0 flex-1">
+                        <p class="text-sm text-gray-700">
+                          <span class="font-medium text-gray-900">{{ entry.actor }}</span>
+                          {{ entry.action }}
+                        </p>
+                        <span class="text-xs text-gray-400">{{ formatDateTime(entry.createdAt) }}</span>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+
         </div>
+      </div>
+    }
 
-        <!-- Tab content -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!-- VARIANT B — Side Panel Layout (two-column, no tabs)     -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    @if (variant() === 'B') {
+      <div class="flex h-full w-full flex-col items-center overflow-y-auto px-10 pb-24 pt-8">
+        <div class="flex w-full max-w-[1600px] flex-col">
 
-        <!-- ═══ Predict Tab ═══ -->
-        @if (activeTab() === 'predict') {
+          <!-- Back link -->
+          <a
+            routerLink="/questions"
+            class="mb-4 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+          >
+            <app-icon name="arrow-left" class="h-4 w-4" />
+            Back to Questions
+          </a>
+
+          <!-- Header -->
+          <div class="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <div class="mb-3 flex items-start justify-between">
+              <div class="flex items-center gap-2">
+                <app-badge [text]="statusLabels[question.status]" [colorClass]="statusColors[question.status]" />
+                <app-badge [text]="question.category" colorClass="bg-gray-100 text-gray-700" />
+                <app-badge [text]="question.visibility" colorClass="bg-blue-50 text-blue-700" />
+              </div>
+              <div class="text-right text-xs text-gray-500">
+                <p>Created by {{ question.createdBy }} on {{ formatDate(question.createdAt) }}</p>
+              </div>
+            </div>
+
+            <h1 class="mb-3 text-xl font-medium text-gray-900">{{ question.title }}</h1>
+
+            <div class="flex items-center gap-6 text-sm text-gray-600">
+              <div class="flex items-center gap-1.5">
+                <app-icon name="calendar-days" class="h-4 w-4 text-gray-400" />
+                Deadline: {{ formatDate(question.deadline) }}
+              </div>
+              <div class="flex items-center gap-1.5">
+                <app-icon name="users" class="h-4 w-4 text-gray-400" />
+                {{ question.predictions }} predictions
+              </div>
+              <div class="flex items-center gap-1.5">
+                <app-icon name="bar-chart-3" class="h-4 w-4 text-gray-400" />
+                Consensus: {{ (question.consensus * 100).toFixed(0) }}%
+              </div>
+            </div>
+          </div>
+
+          <!-- Two-column layout -->
           <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <!-- Prediction form (2/3) -->
-            <div class="lg:col-span-2">
-              <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-                <h2 class="mb-4 text-sm font-semibold text-gray-800">Submit Your Prediction</h2>
 
-                <!-- Probability slider -->
+            <!-- Left column (2/3) — stacked sections, no tabs -->
+            <div class="space-y-6 lg:col-span-2">
+
+              <!-- Prediction form -->
+              <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+                <div class="mb-4 flex items-center gap-2">
+                  <app-icon name="target" class="h-4 w-4 text-rose-500" />
+                  <h2 class="text-sm font-semibold text-gray-800">Submit Your Prediction</h2>
+                </div>
+
                 <div class="mb-4">
                   <div class="mb-2 flex items-center justify-between">
                     <label class="text-sm font-medium text-gray-700">Probability</label>
@@ -230,12 +517,11 @@ type Tab = 'predict' | 'community' | 'comments' | 'activity'
                   </div>
                 </div>
 
-                <!-- Reasoning -->
                 <div class="mb-4">
                   <label class="mb-1 block text-sm font-medium text-gray-700">Reasoning</label>
                   <textarea
                     class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-400/30"
-                    rows="4"
+                    rows="3"
                     placeholder="What evidence or analysis supports this probability estimate?"
                     [ngModel]="predictionReasoning()"
                     (ngModelChange)="predictionReasoning.set($event)"
@@ -250,192 +536,501 @@ type Tab = 'predict' | 'community' | 'comments' | 'activity'
                   Submit Prediction
                 </button>
               </div>
-            </div>
 
-            <!-- Revision history (1/3) -->
-            <div>
+              <!-- Comments section -->
               <div class="rounded-lg border border-gray-200 bg-white shadow-sm">
-                <div class="flex items-center gap-2 border-b border-gray-100 px-5 py-3">
-                  <app-icon name="history" class="h-4 w-4 text-rose-500" />
-                  <h2 class="text-sm font-semibold text-gray-800">My Revisions</h2>
+                <div class="border-b border-gray-100 px-5 py-3">
+                  <div class="flex items-center gap-2">
+                    <app-icon name="message-circle" class="h-4 w-4 text-rose-500" />
+                    <h2 class="text-sm font-semibold text-gray-800">Discussion ({{ comments().length }})</h2>
+                  </div>
                 </div>
-                @if (myRevisions.length === 0) {
-                  <div class="px-5 py-8 text-center">
-                    <app-icon name="target" class="mx-auto mb-2 h-8 w-8 text-gray-300" />
-                    <p class="text-sm text-gray-500">No predictions yet</p>
-                    <p class="text-xs text-gray-400">Submit your first prediction</p>
+
+                <!-- Add comment -->
+                <div class="border-b border-gray-100 p-4">
+                  <textarea
+                    class="mb-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-400/30"
+                    rows="2"
+                    placeholder="Share analysis, evidence, or questions..."
+                    [ngModel]="newCommentText()"
+                    (ngModelChange)="newCommentText.set($event)"
+                    maxlength="5000"
+                  ></textarea>
+                  <button
+                    class="rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-50"
+                    [disabled]="!newCommentText().trim()"
+                    (click)="submitComment()"
+                  >
+                    Post Comment
+                  </button>
+                </div>
+
+                @if (comments().length === 0) {
+                  <div class="flex flex-col items-center justify-center py-8">
+                    <app-icon name="message-circle" class="mb-2 h-8 w-8 text-gray-300" />
+                    <p class="text-sm text-gray-500">No comments yet</p>
                   </div>
                 } @else {
                   <div class="divide-y divide-gray-50">
-                    @for (rev of myRevisions; track rev.id) {
+                    @for (comment of comments(); track comment.id) {
                       <div class="px-5 py-3">
-                        <div class="mb-1 flex items-center justify-between">
-                          <span class="text-lg font-bold text-gray-900">{{ (rev.probability * 100).toFixed(0) }}%</span>
-                          <span class="text-xs text-gray-400">{{ formatDateTime(rev.createdAt) }}</span>
+                        <div class="mb-1.5 flex items-center gap-2">
+                          <div class="flex h-6 w-6 items-center justify-center rounded-full bg-rose-50 text-[10px] font-medium text-rose-600">
+                            {{ getInitials(comment.author) }}
+                          </div>
+                          <span class="text-sm font-medium text-gray-900">{{ comment.author }}</span>
+                          <span class="text-xs text-gray-400">{{ formatDateTime(comment.createdAt) }}</span>
                         </div>
-                        <p class="line-clamp-2 text-xs text-gray-600">{{ rev.reasoning }}</p>
+                        <p class="pl-8 text-sm text-gray-700">{{ comment.text }}</p>
                       </div>
                     }
                   </div>
                 }
               </div>
             </div>
-          </div>
-        }
 
-        <!-- ═══ Community Tab ═══ -->
-        @if (activeTab() === 'community') {
-          <div class="space-y-6">
-            <!-- Aggregate stats -->
-            <div class="grid grid-cols-4 gap-4">
-              <div class="rounded-lg border border-gray-200 bg-white p-5 text-center shadow-sm">
-                <p class="text-sm text-gray-500">Mean</p>
-                <p class="mt-1 text-3xl font-bold text-gray-900">{{ (communityStats.mean * 100).toFixed(0) }}%</p>
-              </div>
-              <div class="rounded-lg border border-gray-200 bg-white p-5 text-center shadow-sm">
-                <p class="text-sm text-gray-500">Median</p>
-                <p class="mt-1 text-3xl font-bold text-gray-900">{{ (communityStats.median * 100).toFixed(0) }}%</p>
-              </div>
-              <div class="rounded-lg border border-gray-200 bg-white p-5 text-center shadow-sm">
-                <p class="text-sm text-gray-500">Predictions</p>
-                <p class="mt-1 text-3xl font-bold text-gray-900">{{ communityStats.count }}</p>
-              </div>
-              <div class="rounded-lg border border-gray-200 bg-white p-5 text-center shadow-sm">
-                <p class="text-sm text-gray-500">Std Dev</p>
-                <p class="mt-1 text-3xl font-bold text-gray-900">{{ (communityStats.stdDev * 100).toFixed(0) }}%</p>
-              </div>
-            </div>
+            <!-- Right column (1/3) — sticky sidebar -->
+            <div class="space-y-4 lg:sticky lg:top-8 lg:self-start">
 
-            <!-- Prediction table -->
-            <div class="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-              <table class="w-full text-left text-sm">
-                <thead class="border-b border-gray-200 bg-gray-50">
-                  <tr>
-                    <th scope="col" class="px-4 py-3 font-medium text-gray-600">Analyst</th>
-                    <th scope="col" class="px-4 py-3 font-medium text-gray-600">Probability</th>
-                    <th scope="col" class="px-4 py-3 font-medium text-gray-600">Last Updated</th>
-                    <th scope="col" class="px-4 py-3 font-medium text-gray-600">Brier Score</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (p of communityPredictions; track p.id) {
-                    <tr class="border-b border-gray-100 transition-colors hover:bg-gray-50">
-                      <td class="px-4 py-3">
-                        <div class="flex items-center gap-2">
-                          <div class="flex h-7 w-7 items-center justify-center rounded-full bg-rose-50 text-xs font-medium text-rose-600">
-                            {{ getInitials(p.analyst) }}
-                          </div>
-                          <span class="font-medium text-gray-900">{{ p.analyst }}</span>
+              <!-- Status info -->
+              <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+                <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Status</h3>
+                <div class="space-y-3">
+                  <div class="flex items-center justify-between text-sm">
+                    <span class="text-gray-500">Status</span>
+                    <app-badge [text]="statusLabels[question.status]" [colorClass]="statusColors[question.status]" />
+                  </div>
+                  <div class="flex items-center justify-between text-sm">
+                    <span class="text-gray-500">Deadline</span>
+                    <span class="font-medium text-gray-900">{{ formatDate(question.deadline) }}</span>
+                  </div>
+                  <div class="flex items-center justify-between text-sm">
+                    <span class="text-gray-500">Visibility</span>
+                    <span class="font-medium text-gray-900 capitalize">{{ question.visibility }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Resolution criteria -->
+              <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+                <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Resolution Criteria</h3>
+                <p class="text-sm text-gray-700">{{ question.resolutionCriteria }}</p>
+              </div>
+
+              <!-- Community stats -->
+              <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+                <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Community Stats</h3>
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="text-center">
+                    <p class="text-2xl font-bold text-gray-900">{{ (communityStats.mean * 100).toFixed(0) }}%</p>
+                    <p class="text-xs text-gray-500">Mean</p>
+                  </div>
+                  <div class="text-center">
+                    <p class="text-2xl font-bold text-gray-900">{{ (communityStats.median * 100).toFixed(0) }}%</p>
+                    <p class="text-xs text-gray-500">Median</p>
+                  </div>
+                  <div class="text-center">
+                    <p class="text-2xl font-bold text-gray-900">{{ communityStats.count }}</p>
+                    <p class="text-xs text-gray-500">Predictions</p>
+                  </div>
+                  <div class="text-center">
+                    <p class="text-2xl font-bold text-gray-900">{{ (communityStats.stdDev * 100).toFixed(0) }}%</p>
+                    <p class="text-xs text-gray-500">Std Dev</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- My revisions -->
+              <div class="rounded-lg border border-gray-200 bg-white shadow-sm">
+                <div class="flex items-center gap-2 border-b border-gray-100 px-5 py-3">
+                  <app-icon name="history" class="h-4 w-4 text-rose-500" />
+                  <h3 class="text-xs font-semibold uppercase tracking-wider text-gray-500">My Revisions</h3>
+                </div>
+                @if (myRevisions.length === 0) {
+                  <div class="px-5 py-6 text-center">
+                    <app-icon name="target" class="mx-auto mb-1 h-6 w-6 text-gray-300" />
+                    <p class="text-xs text-gray-500">No predictions yet</p>
+                  </div>
+                } @else {
+                  <div class="divide-y divide-gray-50">
+                    @for (rev of myRevisions; track rev.id) {
+                      <div class="px-5 py-2.5">
+                        <div class="flex items-center justify-between">
+                          <span class="text-sm font-bold text-gray-900">{{ (rev.probability * 100).toFixed(0) }}%</span>
+                          <span class="text-xs text-gray-400">{{ formatDateTime(rev.createdAt) }}</span>
                         </div>
-                      </td>
-                      <td class="px-4 py-3">
-                        <div class="flex items-center gap-2">
-                          <div class="h-1.5 w-16 overflow-hidden rounded-full bg-gray-200">
-                            <div
-                              class="h-full rounded-full bg-rose-400"
-                              [style.width.%]="p.probability * 100"
-                            ></div>
-                          </div>
-                          <span class="font-medium text-gray-900">{{ (p.probability * 100).toFixed(0) }}%</span>
-                        </div>
-                      </td>
-                      <td class="px-4 py-3 text-gray-600">{{ formatDate(p.updatedAt) }}</td>
-                      <td class="px-4 py-3 text-gray-600">{{ p.brierScore !== null ? p.brierScore.toFixed(3) : '--' }}</td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          </div>
-        }
-
-        <!-- ═══ Comments Tab ═══ -->
-        @if (activeTab() === 'comments') {
-          <div class="space-y-4">
-            <!-- Add comment form -->
-            <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-              <label class="mb-1 block text-sm font-medium text-gray-700">Add a Comment</label>
-              <textarea
-                class="mb-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-400/30"
-                rows="3"
-                placeholder="Share analysis, evidence, or questions..."
-                [ngModel]="newCommentText()"
-                (ngModelChange)="newCommentText.set($event)"
-                maxlength="5000"
-              ></textarea>
-              <button
-                class="rounded-lg bg-rose-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-50"
-                [disabled]="!newCommentText().trim()"
-                (click)="submitComment()"
-              >
-                Post Comment
-              </button>
-            </div>
-
-            <!-- Comments list -->
-            @if (comments().length === 0) {
-              <div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 py-12">
-                <app-icon name="message-circle" class="mb-3 h-10 w-10 text-gray-300" />
-                <p class="text-sm text-gray-500">No comments yet</p>
-                <p class="text-xs text-gray-400">Be the first to share your analysis</p>
-              </div>
-            } @else {
-              <div class="space-y-3">
-                @for (comment of comments(); track comment.id) {
-                  <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-                    <div class="mb-2 flex items-center gap-2">
-                      <div class="flex h-7 w-7 items-center justify-center rounded-full bg-rose-50 text-xs font-medium text-rose-600">
-                        {{ getInitials(comment.author) }}
+                        <p class="line-clamp-1 text-xs text-gray-500">{{ rev.reasoning }}</p>
                       </div>
-                      <span class="text-sm font-medium text-gray-900">{{ comment.author }}</span>
-                      <span class="text-xs text-gray-400">{{ formatDateTime(comment.createdAt) }}</span>
-                    </div>
-                    <p class="text-sm text-gray-700">{{ comment.text }}</p>
+                    }
                   </div>
                 }
               </div>
-            }
-          </div>
-        }
 
-        <!-- ═══ Activity Tab ═══ -->
-        @if (activeTab() === 'activity') {
-          <div class="rounded-lg border border-gray-200 bg-white shadow-sm">
-            <div class="border-b border-gray-100 px-5 py-3">
-              <h2 class="text-sm font-semibold text-gray-800">Activity Timeline</h2>
+              <!-- Activity timeline -->
+              <div class="rounded-lg border border-gray-200 bg-white shadow-sm">
+                <div class="flex items-center gap-2 border-b border-gray-100 px-5 py-3">
+                  <app-icon name="activity" class="h-4 w-4 text-rose-500" />
+                  <h3 class="text-xs font-semibold uppercase tracking-wider text-gray-500">Activity</h3>
+                </div>
+                @if (activityEntries.length === 0) {
+                  <div class="px-5 py-6 text-center">
+                    <app-icon name="activity" class="mx-auto mb-1 h-6 w-6 text-gray-300" />
+                    <p class="text-xs text-gray-500">No activity yet</p>
+                  </div>
+                } @else {
+                  <div class="divide-y divide-gray-50">
+                    @for (entry of activityEntries; track entry.id) {
+                      <div class="px-5 py-2.5">
+                        <p class="text-xs text-gray-700">
+                          <span class="font-medium text-gray-900">{{ entry.actor }}</span>
+                          {{ entry.action }}
+                        </p>
+                        <span class="text-[10px] text-gray-400">{{ formatDateTime(entry.createdAt) }}</span>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+
             </div>
-            @if (activityEntries.length === 0) {
-              <div class="px-5 py-12 text-center">
-                <app-icon name="activity" class="mx-auto mb-2 h-8 w-8 text-gray-300" />
-                <p class="text-sm text-gray-500">No activity yet</p>
-              </div>
-            } @else {
-              <div class="divide-y divide-gray-50">
-                @for (entry of activityEntries; track entry.id) {
-                  <div class="flex items-start gap-3 px-5 py-3 transition-colors hover:bg-gray-50">
-                    <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-medium text-gray-600">
-                      {{ getInitials(entry.actor) }}
-                    </div>
-                    <div class="min-w-0 flex-1">
-                      <p class="text-sm text-gray-700">
-                        <span class="font-medium text-gray-900">{{ entry.actor }}</span>
-                        {{ entry.action }}
-                      </p>
-                      <span class="text-xs text-gray-400">{{ formatDateTime(entry.createdAt) }}</span>
-                    </div>
-                  </div>
+          </div>
+
+        </div>
+      </div>
+    }
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!-- VARIANT C — Compact Header + Vertical Tabs              -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    @if (variant() === 'C') {
+      <div class="flex h-full w-full flex-col items-center overflow-y-auto px-10 pb-24 pt-8">
+        <div class="flex w-full max-w-[1600px] flex-col">
+
+          <!-- Back link -->
+          <a
+            routerLink="/questions"
+            class="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+          >
+            <app-icon name="arrow-left" class="h-4 w-4" />
+            Back to Questions
+          </a>
+
+          <!-- Compact header — title + badges inline, no card -->
+          <div class="mb-1 flex items-center gap-2">
+            <app-badge [text]="statusLabels[question.status]" [colorClass]="statusColors[question.status]" />
+            <app-badge [text]="question.category" colorClass="bg-gray-100 text-gray-700" />
+            <app-badge [text]="question.visibility" colorClass="bg-blue-50 text-blue-700" />
+          </div>
+
+          <h1 class="mb-2 text-lg font-semibold text-gray-900">{{ question.title }}</h1>
+
+          <div class="mb-4 flex items-center gap-4 text-xs text-gray-500">
+            <span class="flex items-center gap-1">
+              <app-icon name="calendar-days" class="h-3.5 w-3.5" />
+              {{ formatDate(question.deadline) }}
+            </span>
+            <span class="flex items-center gap-1">
+              <app-icon name="users" class="h-3.5 w-3.5" />
+              {{ question.predictions }} predictions
+            </span>
+            <span class="flex items-center gap-1">
+              <app-icon name="bar-chart-3" class="h-3.5 w-3.5" />
+              {{ (question.consensus * 100).toFixed(0) }}% consensus
+            </span>
+            <span>by {{ question.createdBy }}</span>
+          </div>
+
+          <!-- Resolution criteria — collapsible -->
+          <div class="mb-5">
+            <button
+              class="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-gray-500 hover:text-gray-700"
+              (click)="resolutionExpanded.set(!resolutionExpanded())"
+            >
+              <app-icon [name]="resolutionExpanded() ? 'chevron-down' : 'chevron-right'" class="h-3.5 w-3.5" />
+              Resolution Criteria
+            </button>
+            @if (resolutionExpanded()) {
+              <div class="mt-2 rounded-lg border border-gray-100 bg-gray-50 p-3">
+                <p class="text-sm text-gray-700">{{ question.resolutionCriteria }}</p>
+                @if (question.description) {
+                  <p class="mt-2 text-sm text-gray-600">{{ question.description }}</p>
                 }
               </div>
             }
           </div>
-        }
 
+          <!-- Vertical tabs + content -->
+          <div class="flex gap-6">
+
+            <!-- Vertical tab nav — slim sidebar -->
+            <nav aria-label="Question detail sections" class="w-44 shrink-0">
+              <div class="sticky top-8 space-y-1">
+                @for (tab of tabs; track tab.key) {
+                  <button
+                    class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors"
+                    [class]="activeTab() === tab.key
+                      ? 'bg-rose-50 text-rose-700'
+                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'"
+                    (click)="activeTab.set(tab.key)"
+                  >
+                    <app-icon [name]="tab.icon" class="h-4 w-4" />
+                    {{ tab.label }}
+                  </button>
+                }
+              </div>
+            </nav>
+
+            <!-- Content area -->
+            <div class="min-w-0 flex-1">
+
+              <!-- Predict -->
+              @if (activeTab() === 'predict') {
+                <div class="space-y-6">
+
+                  <!-- Slider at top -->
+                  <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+                    <div class="mb-3 flex items-center justify-between">
+                      <h2 class="text-sm font-semibold text-gray-800">Your Prediction</h2>
+                      <span class="text-3xl font-bold text-rose-600">{{ (predictionValue() * 100).toFixed(0) }}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-rose-500"
+                      min="0"
+                      max="100"
+                      step="1"
+                      [ngModel]="predictionValue() * 100"
+                      (ngModelChange)="predictionValue.set($event / 100)"
+                    />
+                    <div class="mt-1 flex justify-between text-xs text-gray-400">
+                      <span>0%</span>
+                      <span>50%</span>
+                      <span>100%</span>
+                    </div>
+
+                    <div class="mt-4">
+                      <textarea
+                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-400/30"
+                        rows="3"
+                        placeholder="Reasoning..."
+                        [ngModel]="predictionReasoning()"
+                        (ngModelChange)="predictionReasoning.set($event)"
+                        maxlength="5000"
+                      ></textarea>
+                    </div>
+
+                    <div class="mt-3 flex justify-end">
+                      <button
+                        class="rounded-lg bg-rose-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-600"
+                        (click)="submitPrediction()"
+                      >
+                        Submit
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Revision timeline below -->
+                  <div>
+                    <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Revision Timeline</h3>
+                    @if (myRevisions.length === 0) {
+                      <div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 py-8">
+                        <app-icon name="target" class="mb-2 h-8 w-8 text-gray-300" />
+                        <p class="text-sm text-gray-500">No predictions yet</p>
+                      </div>
+                    } @else {
+                      <div class="relative border-l-2 border-gray-200 pl-6">
+                        @for (rev of myRevisions; track rev.id) {
+                          <div class="relative mb-6 last:mb-0">
+                            <!-- Timeline dot -->
+                            <div class="absolute -left-[31px] top-0.5 h-4 w-4 rounded-full border-2 border-rose-400 bg-white"></div>
+                            <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                              <div class="mb-1 flex items-center justify-between">
+                                <span class="text-lg font-bold text-gray-900">{{ (rev.probability * 100).toFixed(0) }}%</span>
+                                <span class="text-xs text-gray-400">{{ formatDateTime(rev.createdAt) }}</span>
+                              </div>
+                              <p class="text-sm text-gray-600">{{ rev.reasoning }}</p>
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- Community -->
+              @if (activeTab() === 'community') {
+                <div class="space-y-6">
+                  <!-- Stats row -->
+                  <div class="grid grid-cols-4 gap-3">
+                    <div class="rounded-lg border border-gray-200 bg-white p-4 text-center shadow-sm">
+                      <p class="text-2xl font-bold text-gray-900">{{ (communityStats.mean * 100).toFixed(0) }}%</p>
+                      <p class="text-xs text-gray-500">Mean</p>
+                    </div>
+                    <div class="rounded-lg border border-gray-200 bg-white p-4 text-center shadow-sm">
+                      <p class="text-2xl font-bold text-gray-900">{{ (communityStats.median * 100).toFixed(0) }}%</p>
+                      <p class="text-xs text-gray-500">Median</p>
+                    </div>
+                    <div class="rounded-lg border border-gray-200 bg-white p-4 text-center shadow-sm">
+                      <p class="text-2xl font-bold text-gray-900">{{ communityStats.count }}</p>
+                      <p class="text-xs text-gray-500">Predictions</p>
+                    </div>
+                    <div class="rounded-lg border border-gray-200 bg-white p-4 text-center shadow-sm">
+                      <p class="text-2xl font-bold text-gray-900">{{ (communityStats.stdDev * 100).toFixed(0) }}%</p>
+                      <p class="text-xs text-gray-500">Std Dev</p>
+                    </div>
+                  </div>
+
+                  <!-- Prediction table -->
+                  <div class="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+                    <table class="w-full text-left text-sm">
+                      <thead class="border-b border-gray-200 bg-gray-50">
+                        <tr>
+                          <th scope="col" class="px-4 py-3 font-medium text-gray-600">Analyst</th>
+                          <th scope="col" class="px-4 py-3 font-medium text-gray-600">Probability</th>
+                          <th scope="col" class="px-4 py-3 font-medium text-gray-600">Last Updated</th>
+                          <th scope="col" class="px-4 py-3 font-medium text-gray-600">Brier Score</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (p of communityPredictions; track p.id) {
+                          <tr class="border-b border-gray-100 transition-colors hover:bg-gray-50">
+                            <td class="px-4 py-3">
+                              <div class="flex items-center gap-2">
+                                <div class="flex h-7 w-7 items-center justify-center rounded-full bg-rose-50 text-xs font-medium text-rose-600">
+                                  {{ getInitials(p.analyst) }}
+                                </div>
+                                <span class="font-medium text-gray-900">{{ p.analyst }}</span>
+                              </div>
+                            </td>
+                            <td class="px-4 py-3">
+                              <div class="flex items-center gap-2">
+                                <div class="h-1.5 w-16 overflow-hidden rounded-full bg-gray-200">
+                                  <div
+                                    class="h-full rounded-full bg-rose-400"
+                                    [style.width.%]="p.probability * 100"
+                                  ></div>
+                                </div>
+                                <span class="font-medium text-gray-900">{{ (p.probability * 100).toFixed(0) }}%</span>
+                              </div>
+                            </td>
+                            <td class="px-4 py-3 text-gray-600">{{ formatDate(p.updatedAt) }}</td>
+                            <td class="px-4 py-3 text-gray-600">{{ p.brierScore !== null ? p.brierScore.toFixed(3) : '--' }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              }
+
+              <!-- Comments -->
+              @if (activeTab() === 'comments') {
+                <div class="space-y-4">
+                  <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Add a Comment</label>
+                    <textarea
+                      class="mb-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-400/30"
+                      rows="3"
+                      placeholder="Share analysis, evidence, or questions..."
+                      [ngModel]="newCommentText()"
+                      (ngModelChange)="newCommentText.set($event)"
+                      maxlength="5000"
+                    ></textarea>
+                    <button
+                      class="rounded-lg bg-rose-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-50"
+                      [disabled]="!newCommentText().trim()"
+                      (click)="submitComment()"
+                    >
+                      Post Comment
+                    </button>
+                  </div>
+
+                  @if (comments().length === 0) {
+                    <div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 py-12">
+                      <app-icon name="message-circle" class="mb-3 h-10 w-10 text-gray-300" />
+                      <p class="text-sm text-gray-500">No comments yet</p>
+                      <p class="text-xs text-gray-400">Be the first to share your analysis</p>
+                    </div>
+                  } @else {
+                    <div class="space-y-3">
+                      @for (comment of comments(); track comment.id) {
+                        <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                          <div class="mb-2 flex items-center gap-2">
+                            <div class="flex h-7 w-7 items-center justify-center rounded-full bg-rose-50 text-xs font-medium text-rose-600">
+                              {{ getInitials(comment.author) }}
+                            </div>
+                            <span class="text-sm font-medium text-gray-900">{{ comment.author }}</span>
+                            <span class="text-xs text-gray-400">{{ formatDateTime(comment.createdAt) }}</span>
+                          </div>
+                          <p class="text-sm text-gray-700">{{ comment.text }}</p>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+
+              <!-- Activity -->
+              @if (activeTab() === 'activity') {
+                <div class="rounded-lg border border-gray-200 bg-white shadow-sm">
+                  <div class="border-b border-gray-100 px-5 py-3">
+                    <h2 class="text-sm font-semibold text-gray-800">Activity Timeline</h2>
+                  </div>
+                  @if (activityEntries.length === 0) {
+                    <div class="px-5 py-12 text-center">
+                      <app-icon name="activity" class="mx-auto mb-2 h-8 w-8 text-gray-300" />
+                      <p class="text-sm text-gray-500">No activity yet</p>
+                    </div>
+                  } @else {
+                    <div class="divide-y divide-gray-50">
+                      @for (entry of activityEntries; track entry.id) {
+                        <div class="flex items-start gap-3 px-5 py-3 transition-colors hover:bg-gray-50">
+                          <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-medium text-gray-600">
+                            {{ getInitials(entry.actor) }}
+                          </div>
+                          <div class="min-w-0 flex-1">
+                            <p class="text-sm text-gray-700">
+                              <span class="font-medium text-gray-900">{{ entry.actor }}</span>
+                              {{ entry.action }}
+                            </p>
+                            <span class="text-xs text-gray-400">{{ formatDateTime(entry.createdAt) }}</span>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+
+            </div>
+          </div>
+
+        </div>
       </div>
+    }
+
+    <!-- Variant switcher -->
+    <div class="fixed bottom-4 right-4 z-50 flex gap-1 rounded-lg bg-gray-900 p-2 text-xs text-white shadow-lg">
+      <span class="mr-1 opacity-60">Variant:</span>
+      @for (v of ['A', 'B', 'C']; track v) {
+        <button class="rounded px-2 py-1" [class]="variant() === v ? 'bg-rose-600' : 'hover:bg-gray-700'"
+          (click)="setVariant(v)">{{ v }}</button>
+      }
     </div>
   `,
 })
 export class QuestionDetailComponent {
   private readonly route = inject(ActivatedRoute)
+
+  // ── Design variant ──
+  private readonly VARIANT_KEY = 'design-variant-question-detail'
+  variant = signal<string>(localStorage.getItem(this.VARIANT_KEY) ?? 'A')
+
+  setVariant(v: string) {
+    this.variant.set(v)
+    localStorage.setItem(this.VARIANT_KEY, v)
+  }
 
   // ── Constants ──
   readonly statusLabels = QUESTION_STATUS_LABELS
@@ -453,6 +1048,7 @@ export class QuestionDetailComponent {
   predictionValue = signal(0.5)
   predictionReasoning = signal('')
   newCommentText = signal('')
+  resolutionExpanded = signal(false)
 
   // ── Mock data ──
   readonly question = MOCK_QUESTION

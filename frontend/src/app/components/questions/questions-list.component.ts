@@ -4,13 +4,12 @@ import { FormsModule } from '@angular/forms'
 import { toast } from 'ngx-sonner'
 import { IconComponent } from '@shared/components/icon/icon.component'
 import { BadgeComponent } from '@shared/components/badge/badge.component'
-import { LoaderComponent } from '@shared/components/loader/loader.component'
 import {
   QUESTION_STATUS_LABELS,
   QUESTION_STATUS_COLORS,
 } from '@models/enums'
 import type { QuestionStatusValue } from '@models/enums'
-import type { LucideIconName } from '@shared/components/icon/icon.component'
+import type { LucideIconName as _LucideIconName } from '@shared/components/icon/icon.component'
 
 // ── Types ──
 
@@ -74,7 +73,6 @@ const MOCK_QUESTIONS: MockQuestion[] = [
     FormsModule,
     IconComponent,
     BadgeComponent,
-    LoaderComponent,
   ],
   template: `
     <div class="flex h-full w-full flex-col items-center overflow-y-auto px-10 pb-24 pt-8">
@@ -145,97 +143,264 @@ const MOCK_QUESTIONS: MockQuestion[] = [
           }
         </div>
 
-        <!-- Table -->
-        @if (paginatedQuestions().length === 0) {
-          <div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 py-16">
-            <app-icon name="inbox" class="mb-3 h-10 w-10 text-gray-300" />
-            <p class="text-sm text-gray-500">No questions found</p>
-            <p class="mt-1 text-xs text-gray-400">Try adjusting your filters or create a new question</p>
-          </div>
-        } @else {
-          <div class="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-            <table class="w-full text-left text-sm">
-              <thead class="border-b border-gray-200 bg-gray-50">
-                <tr>
-                  @for (col of tableColumns; track col.key) {
-                    <th
-                      scope="col"
-                      class="cursor-pointer px-4 py-3 font-medium text-gray-600 hover:text-gray-900"
-                      (click)="toggleSort(col.key)"
-                    >
-                      <div class="flex items-center gap-1">
-                        {{ col.label }}
-                        @if (sortColumn() === col.key) {
-                          <app-icon [name]="sortDir() === 'asc' ? 'arrow-up' : 'arrow-down'" class="h-3.5 w-3.5" />
-                        }
-                      </div>
-                    </th>
-                  }
-                </tr>
-              </thead>
-              <tbody>
-                @for (q of paginatedQuestions(); track q.id) {
-                  <tr class="border-b border-gray-100 transition-colors hover:bg-gray-50">
-                    <td class="max-w-xs px-4 py-3">
-                      <a
-                        [routerLink]="['/questions', q.id]"
-                        class="font-medium text-gray-900 hover:text-rose-600 hover:underline"
-                      >{{ q.title }}</a>
-                    </td>
-                    <td class="px-4 py-3">
-                      <app-badge [text]="q.category" colorClass="bg-gray-100 text-gray-700" />
-                    </td>
-                    <td class="px-4 py-3">
-                      <app-badge [text]="statusLabels[q.status]" [colorClass]="statusColors[q.status]" />
-                    </td>
-                    <td class="px-4 py-3 text-gray-600">{{ formatDate(q.deadline) }}</td>
-                    <td class="px-4 py-3 text-center text-gray-600">{{ q.predictions }}</td>
-                    <td class="px-4 py-3">
-                      <div class="flex items-center gap-2">
-                        <div class="h-1.5 w-16 overflow-hidden rounded-full bg-gray-200">
-                          <div
-                            class="h-full rounded-full bg-rose-400 transition-all"
-                            [style.width.%]="q.consensus * 100"
-                          ></div>
-                        </div>
-                        <span class="text-xs text-gray-500">{{ (q.consensus * 100).toFixed(0) }}%</span>
-                      </div>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Pagination -->
-          <div class="mt-4 flex items-center justify-between">
-            <p class="text-sm text-gray-500">
-              Showing {{ paginationStart() }}-{{ paginationEnd() }} of {{ filteredQuestions().length }}
-            </p>
-            <div class="flex items-center gap-1">
-              <button
-                class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                [disabled]="currentPage() === 1"
-                (click)="currentPage.set(currentPage() - 1)"
-              >
-                <app-icon name="chevron-left" class="h-4 w-4" />
-              </button>
-              @for (page of pageNumbers(); track page) {
-                <button
-                  class="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
-                  [class]="page === currentPage() ? 'bg-rose-500 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'"
-                  (click)="currentPage.set(page)"
-                >{{ page }}</button>
-              }
-              <button
-                class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                [disabled]="currentPage() === totalPages()"
-                (click)="currentPage.set(currentPage() + 1)"
-              >
-                <app-icon name="chevron-right" class="h-4 w-4" />
-              </button>
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- ═══ VARIANT A — Standard Table Layout ═══ -->
+        <!-- ═══════════════════════════════════════════ -->
+        @if (variant() === 'A') {
+          @if (paginatedQuestions().length === 0) {
+            <div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 py-16">
+              <app-icon name="inbox" class="mb-3 h-10 w-10 text-gray-300" />
+              <p class="text-sm text-gray-500">No questions found</p>
+              <p class="mt-1 text-xs text-gray-400">Try adjusting your filters or create a new question</p>
             </div>
-          </div>
+          } @else {
+            <div class="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+              <table class="w-full text-left text-sm">
+                <thead class="border-b border-gray-200 bg-gray-50">
+                  <tr>
+                    @for (col of tableColumns; track col.key) {
+                      <th
+                        scope="col"
+                        class="cursor-pointer px-4 py-3 font-medium text-gray-600 hover:text-gray-900"
+                        (click)="toggleSort(col.key)"
+                      >
+                        <div class="flex items-center gap-1">
+                          {{ col.label }}
+                          @if (sortColumn() === col.key) {
+                            <app-icon [name]="sortDir() === 'asc' ? 'arrow-up' : 'arrow-down'" class="h-3.5 w-3.5" />
+                          }
+                        </div>
+                      </th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (q of paginatedQuestions(); track q.id) {
+                    <tr class="border-b border-gray-100 transition-colors hover:bg-gray-50">
+                      <td class="max-w-xs px-4 py-3">
+                        <a
+                          [routerLink]="['/questions', q.id]"
+                          class="font-medium text-gray-900 hover:text-rose-600 hover:underline"
+                        >{{ q.title }}</a>
+                      </td>
+                      <td class="px-4 py-3">
+                        <app-badge [text]="q.category" colorClass="bg-gray-100 text-gray-700" />
+                      </td>
+                      <td class="px-4 py-3">
+                        <app-badge [text]="statusLabels[q.status]" [colorClass]="statusColors[q.status]" />
+                      </td>
+                      <td class="px-4 py-3 text-gray-600">{{ formatDate(q.deadline) }}</td>
+                      <td class="px-4 py-3 text-center text-gray-600">{{ q.predictions }}</td>
+                      <td class="px-4 py-3">
+                        <div class="flex items-center gap-2">
+                          <div class="h-1.5 w-16 overflow-hidden rounded-full bg-gray-200">
+                            <div
+                              class="h-full rounded-full bg-rose-400 transition-all"
+                              [style.width.%]="q.consensus * 100"
+                            ></div>
+                          </div>
+                          <span class="text-xs text-gray-500">{{ (q.consensus * 100).toFixed(0) }}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="mt-4 flex items-center justify-between">
+              <p class="text-sm text-gray-500">
+                Showing {{ paginationStart() }}-{{ paginationEnd() }} of {{ filteredQuestions().length }}
+              </p>
+              <div class="flex items-center gap-1">
+                <button
+                  class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  [disabled]="currentPage() === 1"
+                  (click)="currentPage.set(currentPage() - 1)"
+                  aria-label="Previous page"
+                >
+                  <app-icon name="chevron-left" class="h-4 w-4" />
+                </button>
+                @for (page of pageNumbers(); track page) {
+                  <button
+                    class="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+                    [class]="page === currentPage() ? 'bg-rose-500 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'"
+                    (click)="currentPage.set(page)"
+                  >{{ page }}</button>
+                }
+                <button
+                  class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  [disabled]="currentPage() === totalPages()"
+                  (click)="currentPage.set(currentPage() + 1)"
+                  aria-label="Next page"
+                >
+                  <app-icon name="chevron-right" class="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          }
+        }
+
+        <!-- ═══════════════════════════════════════ -->
+        <!-- ═══ VARIANT B — Card Grid Layout  ═══ -->
+        <!-- ═══════════════════════════════════════ -->
+        @if (variant() === 'B') {
+          @if (paginatedQuestions().length === 0) {
+            <div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 py-16">
+              <app-icon name="inbox" class="mb-3 h-10 w-10 text-gray-300" />
+              <p class="text-sm text-gray-500">No questions found</p>
+              <p class="mt-1 text-xs text-gray-400">Try adjusting your filters or create a new question</p>
+            </div>
+          } @else {
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              @for (q of paginatedQuestions(); track q.id) {
+                <a
+                  [routerLink]="['/questions', q.id]"
+                  class="group flex flex-col rounded-lg border border-gray-200 bg-white shadow-sm transition-all hover:border-rose-200 hover:shadow-md"
+                  [class]="'border-l-4 ' + kanbanStatusBorderColor(q.status)"
+                >
+                  <div class="flex flex-1 flex-col p-4">
+                    <!-- Title -->
+                    <h3 class="mb-2 text-sm font-semibold text-gray-900 group-hover:text-rose-600">
+                      {{ q.title }}
+                    </h3>
+
+                    <!-- Badges row -->
+                    <div class="mb-3 flex flex-wrap items-center gap-2">
+                      <app-badge [text]="statusLabels[q.status]" [colorClass]="statusColors[q.status]" />
+                      <app-badge [text]="q.category" colorClass="bg-gray-100 text-gray-700" />
+                    </div>
+
+                    <!-- Meta grid -->
+                    <div class="mt-auto grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500">
+                      <div class="flex items-center gap-1">
+                        <app-icon name="calendar-days" class="h-3.5 w-3.5 text-gray-400" />
+                        {{ formatDate(q.deadline) }}
+                      </div>
+                      <div class="flex items-center gap-1">
+                        <app-icon name="users" class="h-3.5 w-3.5 text-gray-400" />
+                        {{ q.predictions }} predictions
+                      </div>
+                    </div>
+
+                    <!-- Consensus bar -->
+                    <div class="mt-3 flex items-center gap-2">
+                      <span class="text-xs font-medium text-gray-500">Consensus</span>
+                      <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-200">
+                        <div
+                          class="h-full rounded-full bg-rose-400 transition-all"
+                          [style.width.%]="q.consensus * 100"
+                        ></div>
+                      </div>
+                      <span class="text-xs font-medium text-gray-600">{{ (q.consensus * 100).toFixed(0) }}%</span>
+                    </div>
+                  </div>
+                </a>
+              }
+            </div>
+
+            <!-- Pagination -->
+            <div class="mt-4 flex items-center justify-between">
+              <p class="text-sm text-gray-500">
+                Showing {{ paginationStart() }}-{{ paginationEnd() }} of {{ filteredQuestions().length }}
+              </p>
+              <div class="flex items-center gap-1">
+                <button
+                  class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  [disabled]="currentPage() === 1"
+                  (click)="currentPage.set(currentPage() - 1)"
+                  aria-label="Previous page"
+                >
+                  <app-icon name="chevron-left" class="h-4 w-4" />
+                </button>
+                @for (page of pageNumbers(); track page) {
+                  <button
+                    class="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+                    [class]="page === currentPage() ? 'bg-rose-500 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'"
+                    (click)="currentPage.set(page)"
+                  >{{ page }}</button>
+                }
+                <button
+                  class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  [disabled]="currentPage() === totalPages()"
+                  (click)="currentPage.set(currentPage() + 1)"
+                  aria-label="Next page"
+                >
+                  <app-icon name="chevron-right" class="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          }
+        }
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- ═══ VARIANT C — Kanban-inspired Swimlanes    ═══ -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        @if (variant() === 'C') {
+          @if (filteredQuestions().length === 0) {
+            <div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 py-16">
+              <app-icon name="inbox" class="mb-3 h-10 w-10 text-gray-300" />
+              <p class="text-sm text-gray-500">No questions found</p>
+              <p class="mt-1 text-xs text-gray-400">Try adjusting your filters or create a new question</p>
+            </div>
+          } @else {
+            <div class="space-y-6">
+              @for (group of kanbanGroups(); track group.status) {
+                @if (group.questions.length > 0) {
+                  <div class="rounded-lg border border-gray-200 bg-white shadow-sm">
+                    <!-- Status header strip -->
+                    <div
+                      class="flex items-center gap-3 rounded-t-lg border-b px-4 py-3"
+                      [class]="kanbanHeaderClass(group.status)"
+                    >
+                      <span class="text-sm font-semibold">{{ statusLabels[group.status] }}</span>
+                      <span class="rounded-full bg-white/80 px-2 py-0.5 text-xs font-medium text-gray-700">
+                        {{ group.questions.length }}
+                      </span>
+                    </div>
+
+                    <!-- Horizontal scrollable cards -->
+                    <div class="flex gap-3 overflow-x-auto p-4">
+                      @for (q of group.questions; track q.id) {
+                        <a
+                          [routerLink]="['/questions', q.id]"
+                          class="group flex w-72 shrink-0 flex-col rounded-lg border border-gray-200 bg-gray-50 p-3 transition-all hover:border-rose-300 hover:bg-white hover:shadow-sm"
+                        >
+                          <h4 class="mb-2 line-clamp-2 text-sm font-medium text-gray-900 group-hover:text-rose-600">
+                            {{ q.title }}
+                          </h4>
+                          <div class="mb-2 flex flex-wrap gap-1.5">
+                            <app-badge [text]="q.category" colorClass="bg-gray-100 text-gray-700" />
+                          </div>
+                          <div class="mt-auto flex items-center justify-between text-xs text-gray-500">
+                            <div class="flex items-center gap-1">
+                              <app-icon name="calendar-days" class="h-3 w-3" />
+                              {{ formatDate(q.deadline) }}
+                            </div>
+                            <div class="flex items-center gap-1">
+                              <app-icon name="users" class="h-3 w-3" />
+                              {{ q.predictions }}
+                            </div>
+                          </div>
+                          <!-- Consensus mini bar -->
+                          <div class="mt-2 flex items-center gap-2">
+                            <div class="h-1 flex-1 overflow-hidden rounded-full bg-gray-200">
+                              <div
+                                class="h-full rounded-full bg-rose-400"
+                                [style.width.%]="q.consensus * 100"
+                              ></div>
+                            </div>
+                            <span class="text-[10px] font-medium text-gray-500">{{ (q.consensus * 100).toFixed(0) }}%</span>
+                          </div>
+                        </a>
+                      }
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+          }
         }
 
       </div>
@@ -380,6 +545,15 @@ const MOCK_QUESTIONS: MockQuestion[] = [
         </div>
       </div>
     }
+
+    <!-- Variant switcher -->
+    <div class="fixed bottom-4 right-4 z-50 flex gap-1 rounded-lg bg-gray-900 p-2 text-xs text-white shadow-lg">
+      <span class="mr-1 opacity-60">Variant:</span>
+      @for (v of ['A', 'B', 'C']; track v) {
+        <button class="rounded px-2 py-1" [class]="variant() === v ? 'bg-rose-600' : 'hover:bg-gray-700'"
+          (click)="setVariant(v)">{{ v }}</button>
+      }
+    </div>
   `,
 })
 export class QuestionsListComponent {
@@ -388,10 +562,23 @@ export class QuestionsListComponent {
     if (this.isCreateModalOpen()) this.closeCreateModal()
   }
 
+  // ── Variant switcher ──
+  private readonly VARIANT_KEY = 'design-variant-questions-list'
+  variant = signal<string>(localStorage.getItem(this.VARIANT_KEY) ?? 'A')
+
+  setVariant(v: string) {
+    this.variant.set(v)
+    localStorage.setItem(this.VARIANT_KEY, v)
+  }
+
   // ── Constants ──
   readonly categories = CATEGORIES
   readonly statusLabels = QUESTION_STATUS_LABELS
   readonly statusColors = QUESTION_STATUS_COLORS
+
+  readonly kanbanStatuses: QuestionStatusValue[] = [
+    'open', 'resolved_yes', 'resolved_no', 'ambiguous', 'cancelled',
+  ]
 
   readonly tableColumns: { key: SortColumn; label: string }[] = [
     { key: 'title', label: 'Title' },
@@ -470,6 +657,36 @@ export class QuestionsListComponent {
   hasActiveFilters = computed(() =>
     this.filterText() !== '' || this.filterStatus() !== '' || this.filterCategory() !== '',
   )
+
+  // ── Kanban groups (Variant C) ──
+  kanbanGroups = computed(() =>
+    this.kanbanStatuses.map((status) => ({
+      status,
+      questions: this.filteredQuestions().filter((q) => q.status === status),
+    })),
+  )
+
+  kanbanHeaderClass(status: QuestionStatusValue): string {
+    const map: Record<QuestionStatusValue, string> = {
+      open: 'bg-blue-50 border-blue-200 text-blue-800',
+      resolved_yes: 'bg-green-50 border-green-200 text-green-800',
+      resolved_no: 'bg-red-50 border-red-200 text-red-800',
+      ambiguous: 'bg-gray-50 border-gray-200 text-gray-700',
+      cancelled: 'bg-gray-50 border-gray-200 text-gray-500',
+    }
+    return map[status]
+  }
+
+  kanbanStatusBorderColor(status: QuestionStatusValue): string {
+    const map: Record<QuestionStatusValue, string> = {
+      open: 'border-l-blue-400',
+      resolved_yes: 'border-l-green-400',
+      resolved_no: 'border-l-red-400',
+      ambiguous: 'border-l-gray-400',
+      cancelled: 'border-l-gray-300',
+    }
+    return map[status]
+  }
 
   // ── Filter handlers ──
   onFilterTextChange(text: string) {
