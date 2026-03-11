@@ -1,12 +1,11 @@
 import { TRPCError } from '@trpc/server'
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '../../db/drizzle.ts'
 import {
   predictionTable,
   questionTable,
-  userTable,
 } from '../../drizzle/schema.ts'
 import { logActivity } from '../../services/activity.service.ts'
 import { canViewQuestion } from '../../services/rbac.service.ts'
